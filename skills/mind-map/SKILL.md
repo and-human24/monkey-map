@@ -6,11 +6,11 @@ user_invocable: true
 
 # Mind Map
 
-Generate `.{name}.monkeymap.json` (dotfile, name derived from topic) and open in Monkey Map. Examples: `.architecture.monkeymap.json`, `.pipeline.monkeymap.json`. Multiple maps per project are supported.
+Generate `.{name}.monkeymap/` folder (dotfile, name derived from topic) and open in Monkey Map. Examples: `.architecture.monkeymap/`, `.pipeline.monkeymap/`. Multiple maps per project are supported.
 
 ## Cardinal Rule
 
-Nodes are short labels (3-6 words). All substance goes in `data.details` -- users click a node to read details in a side panel. A 1000-line doc should produce 15-25 nodes with rich details per node.
+Nodes are short labels (3-6 words). All substance goes in node detail files (`nodes/{id}.md`) -- users click a node to read details in a side panel. A 1000-line doc should produce 15-25 nodes with rich details per node.
 
 ## Before You Start
 
@@ -37,24 +37,10 @@ Pipeline steps chain sequentially -- do NOT connect all steps back to a hub.
 
 ## Node Data
 
-Every node can have `details` -- this is where the real content lives:
-
-```json
-{
-  "id": "s2",
-  "type": "shape",
-  "position": { "x": 400, "y": 160 },
-  "data": {
-    "label": "Resolve PMIDs",
-    "shape": "box",
-    "color": "#dc2626",
-    "details": "Map 18 trial names to PubMed IDs via E-utilities, CrossRef, OpenAlex.\n\nStatus: SKIPPED entirely. No trial names resolved.\n\nWhy it matters: Steps 3-4 need PMIDs to find and download trial papers. Without this, extraction reads from the MA paper itself (circular)."
-  }
-}
-```
+In the manifest, nodes have `hasDetails: true` instead of inline details. Details live in `nodes/{id}.md`.
 
 **Label:** 3-6 words, what the node IS.
-**Details:** Multi-line, what the user needs to know. Use `\n` for line breaks. Can include status, context, gaps, links, decisions. No length limit but keep it focused.
+**Details (in .md file):** Multi-line markdown. Can include status, context, gaps, links, decisions. No length limit but keep it focused.
 
 ## Colors
 
@@ -68,10 +54,33 @@ Every node can have `details` -- this is where the real content lives:
 - Hierarchy (parent->child): `default` with arrow
 - Annotation (node->note): `default`, NO arrow
 
-## Full File Structure
+## Edge Handle Semantics
 
-```json
+- sourceHandle/targetHandle: "top" | "bottom" | "left" | "right"
+- Vertical (top/bottom handles) = hierarchy (parent-child)
+- Horizontal (left/right handles) = association (peer/lateral)
+- Default: sourceHandle="bottom", targetHandle="top" (parent->child)
+
+## Folder Structure (v2)
+
+```
+.topic-name.monkeymap/
+  manifest.json     # app-facing: meta + nodes (no details) + edges
+  map.md            # agent-facing: text tree of mind map structure
+  nodes/
+    {uuid}.md       # plain markdown details (only for nodes with content)
+```
+
+## Writing a New Map
+
+```bash
+# Create project folder
+mkdir -p .topic-name.monkeymap/nodes
+
+# Write manifest (nodes WITHOUT details, hasDetails flag instead)
+cat > .topic-name.monkeymap/manifest.json << 'MANIFEST_EOF'
 {
+  "version": 2,
   "meta": {
     "title": "Diagram Title",
     "created": "2026-03-16T00:00:00.000Z",
@@ -79,47 +88,62 @@ Every node can have `details` -- this is where the real content lives:
   },
   "nodes": [
     {
-      "id": "unique-id",
-      "type": "mindmap | shape | note",
-      "position": { "x": 0, "y": 0 },
-      "data": {
-        "label": "Short Label",
-        "details": "Rich details shown in side panel",
-        "color": "#hex",
-        "shape": "box | diamond | ellipse | triangle",
-        "bold": true,
-        "fontSize": "small | normal"
-      }
+      "id": "uuid1",
+      "type": "mindmap",
+      "position": { "x": 250, "y": 250 },
+      "data": { "label": "Root Topic", "color": "#4f46e5", "hasDetails": true }
     }
   ],
-  "edges": [
-    {
-      "id": "edge-id",
-      "source": "node-id",
-      "target": "node-id",
-      "type": "default | straight",
-      "markerEnd": { "type": "arrowclosed", "width": 16, "height": 16 }
-    }
-  ]
+  "edges": []
 }
-```
+MANIFEST_EOF
 
-## Writing the File
+# Write node details as individual markdown files
+cat > .topic-name.monkeymap/nodes/uuid1.md << 'EOF'
+Details content here in plain markdown.
 
-Use Bash heredoc (NOT Write tool):
-```bash
-cat > .topic-name.monkeymap.json << 'MONKEYMAP_EOF'
-{ ... }
-MONKEYMAP_EOF
+Can include multiple paragraphs, lists, code blocks, etc.
+EOF
+
+# Generate map.md (text tree for navigation)
+cat > .topic-name.monkeymap/map.md << 'EOF'
+# Diagram Title
+
+- Root Topic [uuid1]
+  - Child Node [uuid2]
+  ~ Associated Node [uuid3]
+EOF
 ```
 
 For 40+ nodes, generate with `node -e` programmatically.
 
+## map.md Format
+
+Auto-generated tree showing hierarchy and associations:
+- Indented `-` items = children (vertical connections)
+- `~` items = associations (horizontal connections)
+- `[uuid]` after label = node ID, matches filename in `nodes/`
+- Disconnected nodes listed under "Unlinked" section
+
+## Reading an Existing Map
+
+1. Read `map.md` to understand structure and find target nodes
+2. Read specific `nodes/{id}.md` for details
+3. Never need to parse `manifest.json` (that's for the app)
+
+## Updating Existing Maps
+
+1. Read `map.md` to understand current structure
+2. To update node details: edit `nodes/{id}.md` directly
+3. To add/remove/reposition nodes: read `manifest.json`, modify, write back
+4. After structural changes: regenerate `map.md`
+5. Preserve user positions in manifest when adding nodes
+
 ## Opening
 
 ```bash
-open -a "Monkey Map" "$(pwd)/.topic-name.monkeymap.json"  # desktop app (macOS)
-monkey-map --file .topic-name.monkeymap.json               # CLI fallback (any OS)
+open -a "Monkey Map" "$(pwd)/.topic-name.monkeymap"  # desktop app (macOS)
+monkey-map --file .topic-name.monkeymap               # CLI fallback (any OS)
 ```
 
 ## Flow Templates
@@ -137,7 +161,3 @@ curl http://localhost:3141/api/flows
 ```
 
 In the desktop app, select nodes and use the Flow Picker to save/load templates.
-
-## Updating Existing Maps
-
-Read first. Merge new nodes. Preserve user positions. Write back.

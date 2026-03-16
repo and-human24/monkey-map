@@ -59,6 +59,14 @@ export async function renameMindmap(path: string, newName: string): Promise<stri
   return await invoke<string>('rename_mindmap', { path, newName })
 }
 
+export async function migrateMindmap(path: string): Promise<string> {
+  return await invoke<string>('migrate_to_folder', { path })
+}
+
+export async function pickMindmapFolder(): Promise<string | null> {
+  return await invoke<string | null>('pick_mindmap_folder')
+}
+
 // Listen for file changes
 export function onFileChanged(callback: (data: MindMapData) => void): Promise<() => void> {
   return listen<string>('file-changed', (event) => {

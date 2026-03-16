@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { RecentProject } from '../types'
-import { listRecent, removeRecent, pickFile, addRecent, readMindmap } from '../hooks/useTauri'
+import { listRecent, removeRecent, pickFile, pickMindmapFolder, addRecent, readMindmap } from '../hooks/useTauri'
 import { invoke } from '@tauri-apps/api/core'
 
 interface LauncherProps {
@@ -48,6 +48,7 @@ export default function Launcher({ onOpenProject, theme, onToggleTheme }: Launch
 
   const handleOpen = async () => {
     try {
+      // try file picker first (json files), then folder picker (monkeymap folders)
       const path = await pickFile()
       if (!path) return
       const data = await readMindmap(path).catch(() => null)
@@ -55,6 +56,17 @@ export default function Launcher({ onOpenProject, theme, onToggleTheme }: Launch
       await addRecent(path, title)
       onOpenProject(path)
     } catch (e) { console.error('Failed to open project', e) }
+  }
+
+  const handleOpenFolder = async () => {
+    try {
+      const path = await pickMindmapFolder()
+      if (!path) return
+      const data = await readMindmap(path).catch(() => null)
+      const title = data?.meta?.title || path.split(/[/\\]/).pop()?.replace('.monkeymap', '') || 'Project'
+      await addRecent(path, title)
+      onOpenProject(path)
+    } catch (e) { console.error('Failed to open folder project', e) }
   }
 
   const handleRemove = async (path: string, e: React.MouseEvent) => {
@@ -107,7 +119,8 @@ export default function Launcher({ onOpenProject, theme, onToggleTheme }: Launch
         <h1 className="launcher-title">Monkey Map</h1>
         <div className="launcher-actions">
           <button className="launcher-btn primary" onClick={handleNew}>New Project</button>
-          <button className="launcher-btn" onClick={handleOpen}>Open Existing</button>
+          <button className="launcher-btn" onClick={handleOpen}>Open File</button>
+          <button className="launcher-btn" onClick={handleOpenFolder}>Open Folder</button>
         </div>
         {recents.length > 0 && (
           <div className="recent-section">

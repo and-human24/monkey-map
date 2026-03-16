@@ -21,6 +21,7 @@ pub fn run() {
             commands::read_mindmap,
             commands::write_mindmap,
             commands::pick_file,
+            commands::pick_mindmap_folder,
             commands::pick_directory,
             commands::list_recent,
             commands::add_recent,
@@ -30,6 +31,7 @@ pub fn run() {
             commands::delete_flow,
             commands::create_project,
             commands::rename_mindmap,
+            commands::migrate_to_folder,
             watcher::start_watching,
             watcher::stop_watching,
         ])

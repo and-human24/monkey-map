@@ -1,0 +1,24 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "enables the default permissions",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [{"path": "$HOME/.monkey-map/**"}, {"path": "$HOME/Documents/**"}, {"path": "$HOME/Desktop/**"}, {"path": "$HOME/Downloads/**"}, {"path": "$APPDATA/**"}]
+    },
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [{"path": "$HOME/.monkey-map/**"}, {"path": "$HOME/Documents/**"}, {"path": "$HOME/Desktop/**"}, {"path": "$HOME/Downloads/**"}, {"path": "$APPDATA/**"}]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{"path": "$HOME/.monkey-map/**"}, {"path": "$HOME/Documents/**"}, {"path": "$HOME/Desktop/**"}, {"path": "$HOME/Downloads/**"}, {"path": "$APPDATA/**"}]
+    }
+  ]
+}

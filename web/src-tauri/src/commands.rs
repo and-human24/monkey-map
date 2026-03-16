@@ -7,7 +7,7 @@ use tauri_plugin_dialog::DialogExt;
 use uuid::Uuid;
 
 fn config_dir() -> PathBuf {
-    dirs::home_dir().unwrap().join(".monkey-map")
+    dirs::home_dir().expect("HOME directory must be set").join(".monkey-map")
 }
 
 fn ensure_config_dir() -> Result<(), String> {
@@ -92,6 +92,17 @@ fn safe_node_id(id: &str) -> Result<&str, String> {
     Ok(id)
 }
 
+fn validate_subpath(child: &Path, parent: &Path) -> Result<(), String> {
+    if child.exists() {
+        let canonical = child.canonicalize().map_err(|e| map_internal_err("canonicalize subpath", e))?;
+        let parent_canonical = parent.canonicalize().map_err(|e| map_internal_err("canonicalize parent", e))?;
+        if !canonical.starts_with(&parent_canonical) {
+            return Err("Symlink escape detected: subpath resolves outside project".to_string());
+        }
+    }
+    Ok(())
+}
+
 fn read_project_folder(path: &Path) -> Result<String, String> {
     let manifest_path = path.join("manifest.json");
     let manifest_str = fs::read_to_string(&manifest_path)
@@ -106,8 +117,9 @@ fn read_project_folder(path: &Path) -> Result<String, String> {
             let has_details = node.pointer("/data/hasDetails").and_then(|v| v.as_bool()).unwrap_or(false);
             if has_details {
                 if let Some(id) = node.get("id").and_then(|v| v.as_str()) {
-                    let id = safe_node_id(id).unwrap_or(id);
+                    let id = match safe_node_id(id) { Ok(id) => id, Err(_) => continue };
                     let md_path = nodes_dir.join(format!("{}.md", id));
+                    if validate_subpath(&md_path, path).is_err() { continue; }
                     let details = fs::read_to_string(&md_path).unwrap_or_default();
                     if let Some(data_obj) = node.get_mut("data").and_then(|d| d.as_object_mut()) {
                         data_obj.remove("hasDetails");
@@ -176,6 +188,7 @@ fn write_project_folder(path: &Path, data: &str) -> Result<(), String> {
     for (id, details) in &node_details {
         let id = safe_node_id(id)?;
         let md_path = nodes_dir.join(format!("{}.md", id));
+        validate_subpath(&md_path, path).ok(); // warn but don't block new file writes
         let existing = fs::read_to_string(&md_path).unwrap_or_default();
         if *details != existing {
             fs::write(&md_path, details).map_err(|e| map_internal_err("write node md", e))?;
@@ -191,7 +204,7 @@ fn write_project_folder(path: &Path, data: &str) -> Result<(), String> {
             .unwrap_or_default();
         for entry in entries.flatten() {
             if let Some(stem) = entry.path().file_stem().and_then(|s| s.to_str()).map(|s| s.to_string()) {
-                if entry.path().extension().map_or(false, |e| e == "md") && !all_node_ids.contains(&stem) {
+                if entry.path().extension().map_or(false, |e| e == "md") && !all_node_ids.contains(&stem) && !entry.path().is_symlink() {
                     let _ = fs::remove_file(entry.path());
                     write_count += 1;
                 }

@@ -12,8 +12,8 @@ function getPath(
   if (!bend) {
     if (edgeType === 'straight') return `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`
     if (edgeType === 'smoothstep') {
-      const my = (sourceY + targetY) / 2
-      return `M ${sourceX} ${sourceY} C ${sourceX} ${my}, ${targetX} ${my}, ${targetX} ${targetY}`
+      const mx = (sourceX + targetX) / 2
+      return `M ${sourceX} ${sourceY} L ${mx} ${sourceY} L ${mx} ${targetY} L ${targetX} ${targetY}`
     }
     const cy = (sourceY + targetY) / 2
     return `M ${sourceX} ${sourceY} C ${sourceX} ${cy}, ${targetX} ${cy}, ${targetX} ${targetY}`
@@ -45,7 +45,7 @@ export default function DraggableEdge({
   const mid = getMidpoint(sourceX, sourceY, targetX, targetY, bend)
 
   const edgeStyle = highlighted
-    ? { ...(style as React.CSSProperties), stroke: 'var(--accent)', strokeOpacity: 0.8, filter: 'drop-shadow(0 0 3px var(--accent))' }
+    ? { ...(style as React.CSSProperties), stroke: 'var(--accent)', strokeOpacity: 0.8, strokeWidth: 3 }
     : style as React.CSSProperties
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {

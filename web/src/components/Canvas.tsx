@@ -358,12 +358,57 @@ export default function Canvas({
   viewMode,
 }: CanvasProps) {
   const reactFlow = useReactFlow()
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (fitViewFlag > 0) {
       setTimeout(() => reactFlow.fitView({ padding: 0.2, duration: 300 }), 50)
     }
   }, [fitViewFlag, reactFlow])
+
+  // Replace CSS transform scale() with CSS zoom for crisp rendering at all zoom levels.
+  // CSS transform: scale() rasterizes content at 1x then scales the bitmap (blurry).
+  // CSS zoom re-renders content at the target size (crisp text/borders).
+  //
+  // Original: translate(tx, ty) scale(z) → point (fx,fy) at (fx*z+tx, fy*z+ty)
+  // With zoom: translate(tx/z, ty/z) scale(1) + zoom:z → same visual position
+  // The translate must be divided by z to compensate for zoom scaling it back up.
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const vp = container.querySelector('.react-flow__viewport') as HTMLElement
+    if (!vp) return
+
+    let applying = false
+    const observer = new MutationObserver(() => {
+      if (applying) return
+      const t = vp.style.transform
+      const scaleMatch = t.match(/scale\(([^)]+)\)/)
+      if (!scaleMatch) return
+      const z = parseFloat(scaleMatch[1])
+      if (isNaN(z) || z === 0) return
+
+      const translateMatch = t.match(/translate\(([^,]+),\s*([^)]+)\)/)
+      if (!translateMatch) return
+      const tx = parseFloat(translateMatch[1])
+      const ty = parseFloat(translateMatch[2])
+      if (isNaN(tx) || isNaN(ty)) return
+
+      // Skip if already at scale(1) — avoid infinite loop
+      if (Math.abs(z - 1) < 0.0001) {
+        // Still maintain zoom from previous state if needed
+        return
+      }
+
+      applying = true
+      vp.style.transform = `translate(${tx / z}px, ${ty / z}px) scale(1)`
+      vp.style.zoom = String(z)
+      applying = false
+    })
+
+    observer.observe(vp, { attributes: true, attributeFilter: ['style'] })
+    return () => observer.disconnect()
+  }, [])
 
   // listen for custom events from nodes
   const handleLabelUpdate = useCallback(
@@ -449,35 +494,37 @@ export default function Canvas({
   }, [edges, selectedKey])
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={highlightedEdges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={viewMode === 'read' ? undefined : onEdgesChange}
-      onConnect={viewMode === 'read' ? undefined : onConnect}
-      onPaneClick={viewMode === 'read' ? undefined : onPaneClick}
-      nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
-      defaultViewport={viewport}
-      onMoveEnd={(_, vp) => onViewportChange(vp)}
-      fitView={!viewport.zoom || viewport.zoom === 1}
-      deleteKeyCode={viewMode === 'read' ? null : 'Backspace'}
-      connectionMode={ConnectionMode.Loose}
-      panOnDrag
-      nodesDraggable={viewMode === 'edit'}
-      nodesConnectable={viewMode === 'edit'}
-      elementsSelectable
-      selectionMode={SelectionMode.Partial}
-      snapToGrid={viewMode === 'edit'}
-      snapGrid={[20, 20]}
-      minZoom={0.1}
-      edgesFocusable
-      proOptions={{ hideAttribution: true }}
-      connectionLineStyle={{ stroke: 'var(--accent)', strokeWidth: 2 }}
-      defaultEdgeOptions={{ type: edgeStyle, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 } }}
-    >
-      <Background variant={BackgroundVariant.Lines} gap={20} color="var(--grid)" lineWidth={0.5} />
-      <Controls />
-    </ReactFlow>
+    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={highlightedEdges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={viewMode === 'read' ? undefined : onEdgesChange}
+        onConnect={viewMode === 'read' ? undefined : onConnect}
+        onPaneClick={viewMode === 'read' ? undefined : onPaneClick}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        defaultViewport={viewport}
+        onMoveEnd={(_, vp) => onViewportChange(vp)}
+        fitView={!viewport.zoom || viewport.zoom === 1}
+        deleteKeyCode={viewMode === 'read' ? null : 'Backspace'}
+        connectionMode={ConnectionMode.Loose}
+        panOnDrag
+        nodesDraggable={viewMode === 'edit'}
+        nodesConnectable={viewMode === 'edit'}
+        elementsSelectable
+        selectionMode={SelectionMode.Partial}
+        snapToGrid={viewMode === 'edit'}
+        snapGrid={[20, 20]}
+        minZoom={0.1}
+        edgesFocusable
+        proOptions={{ hideAttribution: true }}
+        connectionLineStyle={{ stroke: 'var(--accent)', strokeWidth: 2 }}
+        defaultEdgeOptions={{ type: edgeStyle, markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 } }}
+      >
+        <Background variant={BackgroundVariant.Lines} gap={20} color="var(--grid)" lineWidth={1} />
+        <Controls />
+      </ReactFlow>
+    </div>
   )
 }

@@ -61,6 +61,9 @@ body {
   color: var(--text);
   height: 100vh;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 #root {
@@ -70,6 +73,7 @@ body {
 }
 
 /* React Flow overrides */
+
 .react-flow__node-default,
 .react-flow__node-mindmap {
   background: var(--node-bg) !important;
@@ -106,6 +110,10 @@ body {
   outline-offset: 2px;
 }
 
+.react-flow__edges {
+  shape-rendering: geometricPrecision;
+}
+
 .react-flow__edge-path {
   stroke: var(--node-border);
   stroke-width: 2;
@@ -114,7 +122,7 @@ body {
 
 .react-flow__edge.selected .react-flow__edge-path {
   stroke: var(--accent) !important;
-  filter: drop-shadow(0 0 3px var(--accent));
+  stroke-width: 3;
 }
 
 .react-flow__edge:hover .react-flow__edge-path {
@@ -208,8 +216,7 @@ body {
   height: 32px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: var(--toolbar-bg);
-  backdrop-filter: blur(8px);
+  background: var(--node-bg);
   color: var(--text);
   cursor: pointer;
   transition: background 0.15s;
@@ -255,8 +262,7 @@ body {
 /* Tool palette */
 .tool-group {
   display: flex;
-  background: var(--toolbar-bg);
-  backdrop-filter: blur(8px);
+  background: var(--node-bg);
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
@@ -306,8 +312,7 @@ body {
   padding: 6px 12px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: var(--toolbar-bg);
-  backdrop-filter: blur(8px);
+  background: var(--node-bg);
   color: var(--text);
   cursor: pointer;
   font-size: 13px;

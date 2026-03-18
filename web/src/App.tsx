@@ -1,140 +1,100 @@
 import { useState, useCallback } from 'react'
-import { ReactFlowProvider, type NodeChange, type EdgeChange } from '@xyflow/react'
-import Canvas from './components/Canvas'
-import Toolbar, { type EdgeStyle, type ViewMode } from './components/Toolbar'
 import Launcher from './components/Launcher'
-import FlowPicker from './components/FlowPicker'
-import DetailPanel from './components/DetailPanel'
-import EdgeEditPanel from './components/EdgeEditPanel'
+import TabBar from './components/TabBar'
+import EditorTab from './components/EditorTab'
 import { useTheme } from './hooks/useTheme'
-import { useMindMap } from './hooks/useMindMap'
-import { useFileWatcher } from './hooks/useFileWatcher'
-import { stopWatching } from './hooks/useTauri'
+import type { Tab } from './types'
 
 export default function App() {
   const { theme, toggle } = useTheme()
-  const [projectPath, setProjectPath] = useState<string | null>(null)
-  const [activeTool, setActiveTool] = useState<string | null>(null)
-  const [edgeStyle, setEdgeStyle] = useState<EdgeStyle>('smoothstep')
-  const [fitViewFlag, setFitViewFlag] = useState(0)
-  const [showFlows, setShowFlows] = useState(false)
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('edit')
-  const mindMap = useMindMap(projectPath, edgeStyle)
+  const [tabs, setTabs] = useState<Tab[]>([])
+  const [activeTabId, setActiveTabId] = useState<string | null>(null)
+  const [showLauncher, setShowLauncher] = useState(true)
 
-  useFileWatcher(mindMap.applyExternal)
-
-  const handleNodesChange = useCallback((changes: NodeChange[]) => {
-    mindMap.onNodesChange(changes)
-    for (const change of changes) {
-      if (change.type === 'select' && change.selected) {
-        setSelectedNodeId(change.id)
-        setSelectedEdgeId(null)
-        return
-      }
+  const openProject = useCallback((path: string) => {
+    const existing = tabs.find(t => t.projectPath === path)
+    if (existing) {
+      setActiveTabId(existing.id)
+      setShowLauncher(false)
+      return
     }
-    const hasDeselect = changes.some(c => c.type === 'select' && !c.selected)
-    const hasSelect = changes.some(c => c.type === 'select' && c.selected)
-    if (hasDeselect && !hasSelect) setSelectedNodeId(null)
-  }, [mindMap])
+    const id = crypto.randomUUID()
+    const title = path.split(/[/\\]/).slice(-2, -1)[0] || 'Untitled'
+    setTabs(prev => [...prev, { id, projectPath: path, title }])
+    setActiveTabId(id)
+    setShowLauncher(false)
+  }, [tabs])
 
-  const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
-    mindMap.onEdgesChange(changes)
-    for (const change of changes) {
-      if (change.type === 'select' && change.selected) {
-        setSelectedEdgeId(change.id)
-        setSelectedNodeId(null)
-        return
+  const closeTab = useCallback((id: string) => {
+    setTabs(prev => {
+      const idx = prev.findIndex(t => t.id === id)
+      const next = prev.filter(t => t.id !== id)
+      if (next.length === 0) {
+        setActiveTabId(null)
+        setShowLauncher(true)
+      } else if (activeTabId === id) {
+        const newIdx = Math.min(idx, next.length - 1)
+        setActiveTabId(next[newIdx].id)
       }
-    }
-    const hasDeselect = changes.some(c => c.type === 'select' && !c.selected)
-    const hasSelect = changes.some(c => c.type === 'select' && c.selected)
-    if (hasDeselect && !hasSelect) setSelectedEdgeId(null)
-  }, [mindMap])
+      return next
+    })
+  }, [activeTabId])
 
-  const selectedNode = selectedNodeId ? mindMap.nodes.find(n => n.id === selectedNodeId) || null : null
-  const selectedEdge = selectedEdgeId ? mindMap.edges.find(e => e.id === selectedEdgeId) || null : null
+  const selectTab = useCallback((id: string) => {
+    setActiveTabId(id)
+    setShowLauncher(false)
+  }, [])
 
-  const handleBack = async () => {
-    await mindMap.saveNow()
-    await stopWatching()
-    setProjectPath(null)
-    setActiveTool(null)
-  }
+  const handleNewTab = useCallback(() => {
+    setShowLauncher(true)
+    setActiveTabId(null)
+  }, [])
 
-  const projectTitle = mindMap.meta?.title || projectPath?.split(/[/\\]/).slice(-2, -1)[0] || 'Untitled'
+  const handleBack = useCallback(() => {
+    setShowLauncher(true)
+    setActiveTabId(null)
+  }, [])
+
+  const updateTabTitle = useCallback((id: string, title: string) => {
+    setTabs(prev => prev.map(t => t.id === id ? { ...t, title } : t))
+  }, [])
+
+  const updateTabPath = useCallback((id: string, path: string) => {
+    setTabs(prev => prev.map(t => t.id === id ? { ...t, projectPath: path } : t))
+  }, [])
+
+  const hasTabs = tabs.length > 0
 
   return (
-    <div className={`theme-${theme}`} style={{ height: '100vh' }}>
-      {projectPath ? (
-        <ReactFlowProvider>
-          <Toolbar
-            theme={theme}
-            onToggleTheme={toggle}
-            saveStatus={mindMap.saveStatus}
-            projectTitle={projectTitle}
-            onRenameProject={async (name: string) => {
-              const newPath = await mindMap.renameProject(name)
-              if (newPath) setProjectPath(newPath)
-            }}
-            onBack={handleBack}
-            activeTool={activeTool}
-            onSelectTool={setActiveTool}
-            onAutoLayout={() => { mindMap.autoLayout(); setFitViewFlag(f => f + 1) }}
-            edgeStyle={edgeStyle}
-            onEdgeStyleChange={setEdgeStyle}
-            onShowFlows={() => setShowFlows(true)}
-            viewMode={viewMode}
-            onToggleViewMode={() => setViewMode(m => m === 'edit' ? 'read' : 'edit')}
-          />
-          <Canvas
-            nodes={mindMap.nodes}
-            edges={mindMap.edges}
-            onNodesChange={handleNodesChange}
-            onEdgesChange={handleEdgesChange}
-            onConnect={mindMap.onConnect}
-            onAddNode={mindMap.addNode}
-            onUpdateNodeLabel={mindMap.updateNodeLabel}
-            onUpdateNodeColor={mindMap.updateNodeColor}
-            onUpdateNodeStyle={mindMap.updateNodeStyle}
-            onUpdateNodeDetails={mindMap.updateNodeDetails}
-            onSaveEdges={mindMap.saveEdges}
-            viewport={mindMap.viewport}
-            onViewportChange={mindMap.onViewportChange}
-            activeTool={activeTool}
-            onToolUsed={() => setActiveTool(null)}
-            edgeStyle={edgeStyle}
-            fitViewFlag={fitViewFlag}
-            viewMode={viewMode}
-          />
-          <DetailPanel
-            node={selectedNode}
-            onClose={() => setSelectedNodeId(null)}
-            viewMode={viewMode}
-          />
-          <EdgeEditPanel
-            edge={selectedEdge}
-            onClose={() => setSelectedEdgeId(null)}
-            onUpdate={mindMap.updateEdge}
-            viewMode={viewMode}
-          />
-          {showFlows && (
-            <FlowPicker
-              currentNodes={mindMap.nodes}
-              currentEdges={mindMap.edges}
-              onApply={mindMap.applyFlow}
-              onClose={() => setShowFlows(false)}
-            />
-          )}
-        </ReactFlowProvider>
-      ) : (
+    <div className={`theme-${theme}${hasTabs ? ' has-tabs' : ''}`} style={{ height: '100vh' }}>
+      {hasTabs && (
+        <TabBar
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onSelectTab={selectTab}
+          onCloseTab={closeTab}
+          onNewTab={handleNewTab}
+        />
+      )}
+      {showLauncher && (
         <Launcher
-          onOpenProject={setProjectPath}
+          onOpenProject={openProject}
           theme={theme}
           onToggleTheme={toggle}
         />
       )}
+      {tabs.map(tab => (
+        <EditorTab
+          key={tab.id}
+          projectPath={tab.projectPath}
+          isActive={tab.id === activeTabId && !showLauncher}
+          onTitleChange={(title) => updateTabTitle(tab.id, title)}
+          onPathChange={(path) => updateTabPath(tab.id, path)}
+          onBack={handleBack}
+          theme={theme}
+          onToggleTheme={toggle}
+        />
+      ))}
     </div>
   )
 }

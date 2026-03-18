@@ -26,3 +26,9 @@ export interface RecentProject {
 }
 
 export type ShapeType = 'box' | 'circle' | 'text' | 'diamond' | 'triangle' | 'triangle-down' | 'ellipse' | 'note'
+
+export interface Tab {
+  id: string
+  projectPath: string
+  title: string
+}

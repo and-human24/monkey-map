@@ -79,8 +79,6 @@ export function useMindMap(filePath: string | null, edgeStyle: string = 'smooths
       setMeta(data.meta)
       if (data.meta?.viewport) setViewport(data.meta.viewport)
     }).catch((e) => { console.error('Failed to read mindmap', e) })
-    startWatching(filePath).catch((e) => { console.error('Failed to start file watcher', e) })
-    return () => { stopWatching() }
   }, [filePath])
 
   // only apply edge style when user explicitly changes it via toolbar (not on initial load)

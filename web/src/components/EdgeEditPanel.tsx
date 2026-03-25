@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import type { Edge } from '@xyflow/react'
 import { useClickOutside } from '../hooks/useClickOutside'
 import { useEscapeKey } from '../hooks/useEscapeKey'
+import { useResizable } from '../hooks/useResizable'
 
 const EDGE_COLORS = ['#d0d0d0', '#4f46e5', '#dc2626', '#16a34a', '#ca8a04', '#9333ea', '#0891b2', '#e11d48', '#000000']
 const STROKE_WIDTHS = [1, 2, 3, 4, 6]
@@ -23,6 +24,7 @@ export default function EdgeEditPanel({ edge, onClose, onUpdate, viewMode }: Edg
   const [label, setLabel] = useState('')
   const [editingLabel, setEditingLabel] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const { width, onPointerDown, onPointerMove, onPointerUp } = useResizable(300)
 
   useEffect(() => {
     setLabel((edge?.label as string) || '')
@@ -46,7 +48,13 @@ export default function EdgeEditPanel({ edge, onClose, onUpdate, viewMode }: Edg
   }
 
   return (
-    <div ref={panelRef} className="edge-edit-panel">
+    <div ref={panelRef} className="edge-edit-panel" style={{ width }}>
+      <div
+        className="panel-resize-handle"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+      />
       <div className="detail-panel-header">
         <h2 className="detail-panel-title">Edge</h2>
         <button className="detail-panel-close" onClick={onClose} title="Close">

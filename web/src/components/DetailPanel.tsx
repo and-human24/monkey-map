@@ -3,6 +3,7 @@ import type { Node } from '@xyflow/react'
 import { NODE_COLORS } from '../constants'
 import { useClickOutside } from '../hooks/useClickOutside'
 import { useEscapeKey } from '../hooks/useEscapeKey'
+import { useResizable } from '../hooks/useResizable'
 
 interface DetailPanelProps {
   node: Node | null
@@ -15,6 +16,7 @@ export default function DetailPanel({ node, onClose, viewMode }: DetailPanelProp
   const [detailsValue, setDetailsValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const { width, onPointerDown, onPointerMove, onPointerUp } = useResizable(350)
 
   const data = node?.data as Record<string, unknown> | undefined
   const label = (data?.label as string) || ''
@@ -40,7 +42,13 @@ export default function DetailPanel({ node, onClose, viewMode }: DetailPanelProp
   const typeLabel = nodeType === 'mindmap' ? 'Mind Map Node' : nodeType === 'shape' ? 'Shape' : nodeType === 'note' ? 'Note' : nodeType
 
   return (
-    <div ref={panelRef} className={`detail-panel ${node ? 'detail-panel-visible' : ''}`}>
+    <div ref={panelRef} className={`detail-panel ${node ? 'detail-panel-visible' : ''}`} style={{ width }}>
+      <div
+        className="panel-resize-handle"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+      />
       {node && (
         <>
           <div className="detail-panel-header">

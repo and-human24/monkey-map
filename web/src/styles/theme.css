@@ -1014,13 +1014,30 @@ body {
   padding: 0;
 }
 
+/* Panel resize handle */
+.panel-resize-handle {
+  position: absolute;
+  top: 0;
+  left: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 30;
+  touch-action: none;
+}
+
+.panel-resize-handle:hover,
+.panel-resize-handle:active {
+  background: var(--accent);
+  opacity: 0.4;
+}
+
 /* Detail panel */
 .detail-panel {
   position: fixed;
   top: 48px;
   right: 0;
   bottom: 0;
-  width: 350px;
   background: var(--bg);
   border-left: 1px solid var(--node-border);
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
@@ -1252,7 +1269,6 @@ body {
   top: 48px;
   right: 0;
   bottom: 0;
-  width: 300px;
   background: var(--bg);
   border-left: 1px solid var(--node-border);
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);

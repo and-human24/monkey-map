@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 
-export function useResizable(defaultWidth: number, minWidth = 200, maxWidth = 600) {
+export function useResizable(defaultWidth: number, minWidth = 200) {
   const [width, setWidth] = useState(defaultWidth)
   const dragging = useRef(false)
 
@@ -15,9 +15,10 @@ export function useResizable(defaultWidth: number, minWidth = 200, maxWidth = 60
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging.current) return
     e.preventDefault()
+    const maxWidth = window.innerWidth * 0.8
     const newWidth = window.innerWidth - e.clientX
     setWidth(Math.max(minWidth, Math.min(maxWidth, newWidth)))
-  }, [minWidth, maxWidth])
+  }, [minWidth])
 
   const onPointerUp = useCallback((e: React.PointerEvent) => {
     if (!dragging.current) return

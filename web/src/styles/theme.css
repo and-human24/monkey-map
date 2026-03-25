@@ -1014,6 +1014,20 @@ body {
   padding: 0;
 }
 
+/* Node resize handles */
+.node-resize-line {
+  border-color: var(--accent) !important;
+  border-width: 1px !important;
+}
+
+.node-resize-handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: var(--accent) !important;
+  border: 1.5px solid white !important;
+  border-radius: 2px !important;
+}
+
 /* Panel resize handle */
 .panel-resize-handle {
   position: absolute;

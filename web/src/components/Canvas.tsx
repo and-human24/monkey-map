@@ -14,6 +14,7 @@ import {
   type NodeProps,
   Handle,
   Position,
+  NodeResizer,
   useReactFlow,
   ConnectionMode,
   SelectionMode,
@@ -93,7 +94,7 @@ function getLabelStyle(data: { bold?: boolean; strikethrough?: boolean; fontSize
   }
 }
 
-function MindMapNode({ id, data }: NodeProps<Node<MindMapNodeData>>) {
+function MindMapNode({ id, data, selected }: NodeProps<Node<MindMapNodeData>>) {
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(data.label)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -116,6 +117,7 @@ function MindMapNode({ id, data }: NodeProps<Node<MindMapNodeData>>) {
 
   return (
     <div className="node-editor" style={style}>
+      <NodeResizer isVisible={!!selected} minWidth={80} minHeight={36} lineClassName="node-resize-line" handleClassName="node-resize-handle" />
       <Handle type="source" position={Position.Top} id="top" />
       <Handle type="target" position={Position.Top} id="top" />
       <Handle type="source" position={Position.Left} id="left" />
@@ -147,7 +149,7 @@ function MindMapNode({ id, data }: NodeProps<Node<MindMapNodeData>>) {
   )
 }
 
-function ShapeNode({ id, data }: NodeProps<Node<ShapeNodeData>>) {
+function ShapeNode({ id, data, selected }: NodeProps<Node<ShapeNodeData>>) {
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(data.label)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -173,6 +175,7 @@ function ShapeNode({ id, data }: NodeProps<Node<ShapeNodeData>>) {
 
   return (
     <div className={className} style={colorStyle}>
+      <NodeResizer isVisible={!!selected} minWidth={60} minHeight={36} lineClassName="node-resize-line" handleClassName="node-resize-handle" />
       <Handle type="source" position={Position.Top} id="top" />
       <Handle type="target" position={Position.Top} id="top" />
       <Handle type="source" position={Position.Left} id="left" />
@@ -240,7 +243,7 @@ interface NoteNodeData extends Record<string, unknown> {
   details?: string
 }
 
-function NoteNode({ id, data }: NodeProps<Node<NoteNodeData>>) {
+function NoteNode({ id, data, selected }: NodeProps<Node<NoteNodeData>>) {
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(data.label)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -272,6 +275,7 @@ function NoteNode({ id, data }: NodeProps<Node<NoteNodeData>>) {
         minHeight: data.height || 150,
       }}
     >
+      <NodeResizer isVisible={!!selected} minWidth={120} minHeight={80} lineClassName="node-resize-line" handleClassName="node-resize-handle" />
       <Handle type="source" position={Position.Top} id="top" />
       <Handle type="target" position={Position.Top} id="top" />
       <Handle type="source" position={Position.Left} id="left" />

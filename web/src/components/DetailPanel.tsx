@@ -11,9 +11,12 @@ interface DetailPanelProps {
   viewMode: 'edit' | 'read'
 }
 
+const FONT_SIZES = [12, 13, 14, 16, 18, 20, 24]
+
 export default function DetailPanel({ node, onClose, viewMode }: DetailPanelProps) {
   const [editing, setEditing] = useState(false)
   const [detailsValue, setDetailsValue] = useState('')
+  const [detailsFontSize, setDetailsFontSize] = useState(14)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const { width, onPointerDown, onPointerMove, onPointerUp } = useResizable(350)
@@ -117,18 +120,39 @@ export default function DetailPanel({ node, onClose, viewMode }: DetailPanelProp
           <div className="detail-panel-content">
             <div className="detail-panel-section-header">
               <span className="detail-panel-section-label">Details</span>
-              {!editing && viewMode === 'edit' && (
-                <button
-                  className="detail-panel-edit-btn"
-                  onClick={() => {
-                    setEditing(true)
-                    setDetailsValue(details)
-                    setTimeout(() => textareaRef.current?.focus(), 0)
-                  }}
-                >
-                  Edit
-                </button>
-              )}
+              <div className="detail-panel-section-actions">
+                <div className="detail-font-controls">
+                  <button
+                    className="detail-font-btn"
+                    disabled={detailsFontSize <= FONT_SIZES[0]}
+                    onClick={() => setDetailsFontSize(s => FONT_SIZES[FONT_SIZES.indexOf(s) - 1] || s)}
+                    title="Decrease font size"
+                  >
+                    A-
+                  </button>
+                  <span className="detail-font-size">{detailsFontSize}</span>
+                  <button
+                    className="detail-font-btn"
+                    disabled={detailsFontSize >= FONT_SIZES[FONT_SIZES.length - 1]}
+                    onClick={() => setDetailsFontSize(s => FONT_SIZES[FONT_SIZES.indexOf(s) + 1] || s)}
+                    title="Increase font size"
+                  >
+                    A+
+                  </button>
+                </div>
+                {!editing && viewMode === 'edit' && (
+                  <button
+                    className="detail-panel-edit-btn"
+                    onClick={() => {
+                      setEditing(true)
+                      setDetailsValue(details)
+                      setTimeout(() => textareaRef.current?.focus(), 0)
+                    }}
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
             </div>
             {editing ? (
               <textarea
@@ -143,9 +167,10 @@ export default function DetailPanel({ node, onClose, viewMode }: DetailPanelProp
                 }}
                 placeholder="Add details about this node..."
                 maxLength={5000}
+                style={{ fontSize: detailsFontSize }}
               />
             ) : (
-              <div className="detail-panel-details">
+              <div className="detail-panel-details" style={{ fontSize: detailsFontSize }}>
                 {details || <span className="detail-panel-empty">No details yet</span>}
               </div>
             )}
